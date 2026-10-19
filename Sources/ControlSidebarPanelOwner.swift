@@ -80,14 +80,19 @@ enum ControlSidebarPanelOwner {
     func setAgentLifecycle(
         key: String,
         panelId: UUID?,
-        lifecycle: AgentHibernationLifecycleState
+        lifecycle: AgentHibernationLifecycleState,
+        isLive: Bool = true
     ) {
         switch self {
         case .workspace(let workspace):
             workspace.setAgentLifecycle(key: key, panelId: panelId, lifecycle: lifecycle)
+            if isLive, let panelId = panelId ?? workspace.focusedPanelId {
+                workspace.sidebarAgentRuntimeObservation.noteLiveAgentHook(key: key, panelId: panelId)
+            }
         case .dock(let dock):
             guard let panelId else { return }
             dock.setAgentLifecycle(key: key, panelId: panelId, lifecycle: lifecycle)
+            if isLive { dock.noteLiveAgentHook(key: key, panelId: panelId) }
         }
     }
 

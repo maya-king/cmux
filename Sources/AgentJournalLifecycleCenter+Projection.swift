@@ -176,11 +176,13 @@ extension AgentJournalLifecycleCenter {
 #endif
     }
 
+    /// Live producers opt in to transient hook evidence; replay only paints sidebar state.
     @MainActor
     static func apply(
         _ assignment: AgentLifecycleAssignment,
         workspaceHint: String?,
-        activity: AgentLifecycleActivity? = nil
+        activity: AgentLifecycleActivity? = nil,
+        isLive: Bool = false
     ) {
         guard AgentHibernationLifecycleStatusKeys.isAllowed(assignment.agentKey) else { return }
         guard let panelId = UUID(uuidString: assignment.surfaceId) else { return }
@@ -217,7 +219,8 @@ extension AgentJournalLifecycleCenter {
             owner.setAgentLifecycle(
                 key: assignment.agentKey,
                 panelId: panelId,
-                lifecycle: Self.lifecycle(for: phase)
+                lifecycle: Self.lifecycle(for: phase),
+                isLive: isLive
             )
         } else {
             owner.clearAgentLifecycle(key: assignment.agentKey, panelId: panelId)

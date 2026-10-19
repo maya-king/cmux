@@ -173,6 +173,7 @@
 		79390003AA11BB22CC33DD03 /* AgentNotificationLiveRetargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79390004AA11BB22CC33DD04 /* AgentNotificationLiveRetargetTests.swift */; };
 		7939000FAA11BB22CC33DD0F /* AgentNotificationMoveRaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79390010AA11BB22CC33DD10 /* AgentNotificationMoveRaceTests.swift */; };
 		79460001AA11BB22CC33EE01 /* AgentNotificationMutationBoundaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79460002AA11BB22CC33EE02 /* AgentNotificationMutationBoundaryTests.swift */; };
+		E9D942A7714F558D1727D012 /* AgentNotificationOSCSuppressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F69699E398E72949513064D /* AgentNotificationOSCSuppressionTests.swift */; };
 		B79500130000000000000001 /* AgentPortPublicationHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79500130000000000000002 /* AgentPortPublicationHistory.swift */; };
 		B79500120000000000000001 /* AgentPortRootIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79500120000000000000002 /* AgentPortRootIdentity.swift */; };
 		B79500050000000000000001 /* AgentPortScanPublication.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79500050000000000000002 /* AgentPortScanPublication.swift */; };
@@ -2012,6 +2013,7 @@
 		9518D0C10000000000000001 /* DockSplitStore+ClosedItemHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9518D0C10000000000000002 /* DockSplitStore+ClosedItemHistory.swift */; };
 		DCDC0000000000000000A003 /* DockSplitStore+Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC0000000000000000A004 /* DockSplitStore+Config.swift */; };
 		0793CA78268977DEA89DD706 /* DockSplitStore+DeferredAgentRestoreAdmission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D75A72E3EB3A0BB5E904DC7 /* DockSplitStore+DeferredAgentRestoreAdmission.swift */; };
+		C1F16B3A44F69F54B17385F9 /* DockSplitStore+LiveAgentHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 162D8918374180A81A625D6C /* DockSplitStore+LiveAgentHooks.swift */; };
 		DCDC1000000000000000B019 /* DockSplitStore+PaneFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCDC1000000000000000B020 /* DockSplitStore+PaneFocus.swift */; };
 		8997E0038997E0038997E003 /* DockSplitStore+PanelDestruction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8997F0038997F0038997F003 /* DockSplitStore+PanelDestruction.swift */; };
 		5211D0A28DBA420093D8546C /* DockSplitStore+PaneResize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725324E53E76475FAE1B1255 /* DockSplitStore+PaneResize.swift */; };
@@ -4442,6 +4444,7 @@
 		797800030000000000000001 /* Workspace+PersistentRemotePTYReattach.swift in Sources */ = {isa = PBXBuildFile; fileRef = 797800030000000000000002 /* Workspace+PersistentRemotePTYReattach.swift */; };
 		D12393010000000000000001 /* Workspace+PortalRenderingAuthority.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12393010000000000000002 /* Workspace+PortalRenderingAuthority.swift */; };
 		ED007CBCA5B27E2C9E40DFEC /* Workspace+ProgramStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = D43248ADAF07D461A74E625A /* Workspace+ProgramStatus.swift */; };
+		F53483C1397EE35FC39037D6 /* Workspace+RawNotificationSuppression.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF1AED133A6AADA05F0BF6D /* Workspace+RawNotificationSuppression.swift */; };
 		791100010000000000000001 /* Workspace+RemoteDisconnectPlaceholder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 791100020000000000000001 /* Workspace+RemoteDisconnectPlaceholder.swift */; };
 		51A3E82C604B4E8CB2E62730 /* Workspace+RemotePTYRespawnRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37996A7C5AD2472083D94F54 /* Workspace+RemotePTYRespawnRouting.swift */; };
 		7989B0057989B0057989B005 /* Workspace+RemoteRelayCommandRewrite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7989B1057989B1057989B105 /* Workspace+RemoteRelayCommandRewrite.swift */; };
@@ -4932,6 +4935,7 @@
 		79390004AA11BB22CC33DD04 /* AgentNotificationLiveRetargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentNotificationLiveRetargetTests.swift; sourceTree = "<group>"; };
 		79390010AA11BB22CC33DD10 /* AgentNotificationMoveRaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentNotificationMoveRaceTests.swift; sourceTree = "<group>"; };
 		79460002AA11BB22CC33EE02 /* AgentNotificationMutationBoundaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentNotificationMutationBoundaryTests.swift; sourceTree = "<group>"; };
+		7F69699E398E72949513064D /* AgentNotificationOSCSuppressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgentNotificationOSCSuppressionTests.swift"; sourceTree = "<group>"; };
 		B79500130000000000000002 /* AgentPortPublicationHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPortPublicationHistory.swift; sourceTree = "<group>"; };
 		B79500120000000000000002 /* AgentPortRootIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPortRootIdentity.swift; sourceTree = "<group>"; };
 		B79500050000000000000002 /* AgentPortScanPublication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentPortScanPublication.swift; sourceTree = "<group>"; };
@@ -6603,6 +6607,7 @@
 		9518D0C10000000000000002 /* DockSplitStore+ClosedItemHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DockSplitStore+ClosedItemHistory.swift"; sourceTree = "<group>"; };
 		DCDC0000000000000000A004 /* DockSplitStore+Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DockSplitStore+Config.swift"; sourceTree = "<group>"; };
 		1D75A72E3EB3A0BB5E904DC7 /* DockSplitStore+DeferredAgentRestoreAdmission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DockSplitStore+DeferredAgentRestoreAdmission.swift"; sourceTree = "<group>"; };
+		162D8918374180A81A625D6C /* DockSplitStore+LiveAgentHooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DockSplitStore+LiveAgentHooks.swift"; sourceTree = "<group>"; };
 		DCDC1000000000000000B020 /* DockSplitStore+PaneFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DockSplitStore+PaneFocus.swift"; sourceTree = "<group>"; };
 		8997F0038997F0038997F003 /* DockSplitStore+PanelDestruction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DockSplitStore+PanelDestruction.swift"; sourceTree = "<group>"; };
 		725324E53E76475FAE1B1255 /* DockSplitStore+PaneResize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DockSplitStore+PaneResize.swift"; sourceTree = "<group>"; };
@@ -9003,6 +9008,7 @@
 		797800030000000000000002 /* Workspace+PersistentRemotePTYReattach.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+PersistentRemotePTYReattach.swift"; sourceTree = "<group>"; };
 		D12393010000000000000002 /* Workspace+PortalRenderingAuthority.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+PortalRenderingAuthority.swift"; sourceTree = "<group>"; };
 		D43248ADAF07D461A74E625A /* Workspace+ProgramStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+ProgramStatus.swift"; sourceTree = "<group>"; };
+		5DF1AED133A6AADA05F0BF6D /* Workspace+RawNotificationSuppression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+RawNotificationSuppression.swift"; sourceTree = "<group>"; };
 		791100020000000000000001 /* Workspace+RemoteDisconnectPlaceholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+RemoteDisconnectPlaceholder.swift"; sourceTree = "<group>"; };
 		37996A7C5AD2472083D94F54 /* Workspace+RemotePTYRespawnRouting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+RemotePTYRespawnRouting.swift"; sourceTree = "<group>"; };
 		7989B1057989B1057989B105 /* Workspace+RemoteRelayCommandRewrite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+RemoteRelayCommandRewrite.swift"; sourceTree = "<group>"; };
@@ -12388,6 +12394,8 @@
 				899EDFB4688088904AEC67B4 /* RightSidebarMode+ProductFeature.swift */,
 				34F76A7191862A9BFADE3869 /* PostHogContextCalls.swift */,
 				30AA2D44945B6C4A24A6D837 /* TerminalController+BrowserEmulation.swift */,
+				5DF1AED133A6AADA05F0BF6D /* Workspace+RawNotificationSuppression.swift */,
+				162D8918374180A81A625D6C /* DockSplitStore+LiveAgentHooks.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -13979,6 +13987,7 @@
 				6C52E5BCE0CCFD00CD9ED561 /* AgentPreviousGenerationSessionEndTests.swift */,
 				F152960A3E2799807D8DD3EE /* VaultClaudeCustomTitleTests.swift */,
 				745FF9094E4E0023E0EFB065 /* SidebarWorkspaceSnapshotTests.swift */,
+				7F69699E398E72949513064D /* AgentNotificationOSCSuppressionTests.swift */,
 			);
 			path = cmuxTests;
 			sourceTree = "<group>";
@@ -15739,6 +15748,7 @@
 				9518D0C10000000000000001 /* DockSplitStore+ClosedItemHistory.swift in Sources */,
 				DCDC0000000000000000A003 /* DockSplitStore+Config.swift in Sources */,
 				0793CA78268977DEA89DD706 /* DockSplitStore+DeferredAgentRestoreAdmission.swift in Sources */,
+				C1F16B3A44F69F54B17385F9 /* DockSplitStore+LiveAgentHooks.swift in Sources */,
 				DCDC1000000000000000B019 /* DockSplitStore+PaneFocus.swift in Sources */,
 				8997E0038997E0038997E003 /* DockSplitStore+PanelDestruction.swift in Sources */,
 				5211D0A28DBA420093D8546C /* DockSplitStore+PaneResize.swift in Sources */,
@@ -17389,6 +17399,7 @@
 				797800030000000000000001 /* Workspace+PersistentRemotePTYReattach.swift in Sources */,
 				D12393010000000000000001 /* Workspace+PortalRenderingAuthority.swift in Sources */,
 				ED007CBCA5B27E2C9E40DFEC /* Workspace+ProgramStatus.swift in Sources */,
+				F53483C1397EE35FC39037D6 /* Workspace+RawNotificationSuppression.swift in Sources */,
 				791100010000000000000001 /* Workspace+RemoteDisconnectPlaceholder.swift in Sources */,
 				51A3E82C604B4E8CB2E62730 /* Workspace+RemotePTYRespawnRouting.swift in Sources */,
 				7989B0057989B0057989B005 /* Workspace+RemoteRelayCommandRewrite.swift in Sources */,
@@ -17954,6 +17965,7 @@
 				79390003AA11BB22CC33DD03 /* AgentNotificationLiveRetargetTests.swift in Sources */,
 				7939000FAA11BB22CC33DD0F /* AgentNotificationMoveRaceTests.swift in Sources */,
 				79460001AA11BB22CC33EE01 /* AgentNotificationMutationBoundaryTests.swift in Sources */,
+				E9D942A7714F558D1727D012 /* AgentNotificationOSCSuppressionTests.swift in Sources */,
 				C9559E747B1307F1E13F8549 /* AgentPreviousGenerationSessionEndTests.swift in Sources */,
 				762CA407531356D761E008F5 /* AgentQuitOwnershipTests.swift in Sources */,
 				F6F0F8FCF48DD40A3DB48F42 /* AgentQuitTerminationCoordinatorTests.swift in Sources */,

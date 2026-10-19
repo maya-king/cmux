@@ -17,6 +17,9 @@ final class WorkspaceSidebarAgentRuntimeObservationModel {
     private(set) var agentPIDKeysByPanelId: [UUID: Set<String>] = [:]
     @ObservationIgnored
     private(set) var agentLifecycleStatesByPanelId: [UUID: [String: AgentHibernationLifecycleState]] = [:]
+    /// Transient hook evidence, never populated by journal replay or session restore.
+    @ObservationIgnored
+    private(set) var liveAgentHookKeysByPanelId: [UUID: Set<String>] = [:]
     @ObservationIgnored
     private(set) var changeGeneration: UInt64 = 0
 
@@ -74,7 +77,20 @@ final class WorkspaceSidebarAgentRuntimeObservationModel {
     func setAgentLifecycleStatesByPanelId(_ newValue: [UUID: [String: AgentHibernationLifecycleState]]) {
         guard agentLifecycleStatesByPanelId != newValue else { return }
         agentLifecycleStatesByPanelId = newValue
+        for (panelId, keys) in liveAgentHookKeysByPanelId {
+            setLiveAgentHookKeys(keys.filter { newValue[panelId]?[$0] != nil }, panelId: panelId)
+        }
         notifyChanged()
+    }
+
+    func setLiveAgentHookKeys(_ keys: Set<String>, panelId: UUID) {
+        liveAgentHookKeysByPanelId[panelId] = keys.isEmpty ? nil : keys
+    }
+
+    func noteLiveAgentHook(key: String, panelId: UUID) {
+        guard AgentHibernationLifecycleStatusKeys.allowedStatusKeys.contains(key),
+              agentLifecycleStatesByPanelId[panelId]?[key] != nil else { return }
+        liveAgentHookKeysByPanelId[panelId, default: []].insert(key)
     }
 
     private func notifyChanged() {

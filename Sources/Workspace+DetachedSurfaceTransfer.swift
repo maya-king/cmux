@@ -21,6 +21,8 @@ extension Workspace {
         /// Active lifecycle values follow a live panel into and out of a Dock,
         /// alongside its structured PID ownership.
         var agentLifecycleStates: [String: AgentHibernationLifecycleState] = [:]
+        /// Transient hook evidence follows the live panel but is never persisted.
+        var liveAgentHookKeys: Set<String> = []
     }
 
     struct DetachedSurfaceTransfer {

@@ -307,16 +307,6 @@ extension DockSplitStore {
         return didReplaceRuntime
     }
 
-    func setAgentLifecycle(
-        key: String,
-        panelId: UUID,
-        lifecycle: AgentHibernationLifecycleState
-    ) {
-        mutateAgentRuntime(panelId: panelId, updatesAgentAttention: true) {
-            $0.agentLifecycleStates[key] = lifecycle
-        }
-    }
-
     func agentHibernationLifecycleState(
         panelId: UUID,
         fallback: AgentHibernationLifecycleState?
@@ -331,15 +321,6 @@ extension DockSplitStore {
         AgentHibernationLifecycleState.aggregateForTextBoxEscape(
             statusKeyedStates: agentRuntimeByPanelId[panelId]?.agentLifecycleStates ?? [:]
         )
-    }
-
-    @discardableResult
-    func clearAgentLifecycle(key: String, panelId: UUID) -> Bool {
-        var didClear = false
-        mutateAgentRuntime(panelId: panelId, updatesAgentAttention: true) {
-            didClear = $0.agentLifecycleStates.removeValue(forKey: key) != nil
-        }
-        return didClear
     }
 
     @discardableResult
@@ -364,7 +345,7 @@ extension DockSplitStore {
         return didChange
     }
 
-    private func mutateAgentRuntime(
+    func mutateAgentRuntime(
         panelId: UUID,
         updatesAgentAttention: Bool = false,
         mutation: (inout Workspace.DetachedAgentRuntimeState) -> Void
@@ -378,6 +359,7 @@ extension DockSplitStore {
             agentPIDKeys: []
         )
         mutation(&runtime)
+        runtime.liveAgentHookKeys.formIntersection(runtime.agentLifecycleStates.keys)
         let shouldKeep = !runtime.statusEntries.isEmpty
             || !runtime.agentPIDs.isEmpty
             || !runtime.agentPIDKeys.isEmpty
