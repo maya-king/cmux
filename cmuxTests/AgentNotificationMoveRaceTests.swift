@@ -1,5 +1,6 @@
 import AppKit
 import CMUXAgentLaunch
+import CmuxAgentJournal
 import CmuxControlSocket
 import CmuxSettings
 import Foundation
@@ -322,6 +323,96 @@ struct AgentNotificationRegressionTests {
         )
 
         #expect(!fixture.store.notifications.contains { $0.title == "OSC live-owner suppression" })
+    }
+
+    @Test("Hook lifecycle without a wrapper PID suppresses OSC only on its live surface")
+    func desktopOSCSuppressionUsesHookLifecycleWithoutPID() async throws {
+        let fixture = try makeFixture()
+        defer { fixture.restore() }
+        let siblingId = try #require(fixture.source.newTerminalSplit(
+            from: fixture.panelId, orientation: .horizontal
+        )?.id)
+
+        for phase in [AgentLifecyclePhase.running, .idle, .needsInput] {
+            AgentJournalLifecycleCenter.apply(
+                AgentLifecycleAssignment(
+                    surfaceId: fixture.panelId.uuidString, agentKey: "claude_code", phase: phase
+                ),
+                workspaceHint: fixture.source.id.uuidString
+            )
+            #expect(fixture.source.agentPIDKeysByPanelId[fixture.panelId]?.isEmpty != false)
+            #expect(fixture.source.suppressesRawTerminalNotification(panelId: fixture.panelId))
+            #expect(!fixture.source.suppressesRawTerminalNotification(panelId: siblingId))
+        }
+
+        try movePanel(fixture)
+        await fixture.store.addDesktopNotificationResolvingHooks(
+            tabId: fixture.source.id, surfaceId: fixture.panelId, hookDirectory: nil,
+            title: "Attached session", body: "Duplicate completion"
+        )
+        #expect(fixture.store.notifications.isEmpty)
+
+        AgentJournalLifecycleCenter.apply(
+            AgentLifecycleAssignment(
+                surfaceId: fixture.panelId.uuidString, agentKey: "claude_code", phase: nil
+            ),
+            workspaceHint: fixture.destination.id.uuidString
+        )
+        #expect(!fixture.destination.suppressesRawTerminalNotification(panelId: fixture.panelId))
+        await fixture.store.addDesktopNotificationResolvingHooks(
+            tabId: fixture.source.id, surfaceId: fixture.panelId, hookDirectory: nil,
+            title: "Shell", body: "Human notification after session end"
+        )
+        #expect(fixture.store.notifications.map(\.body) == ["Human notification after session end"])
+    }
+
+    @Test("Machine-shaped OSC never reaches notification history", arguments: [
+        ("scheme://target", "Completed"),
+        ("custom+notify.v1://target", "Completed"),
+        ("SCHEME://target", "Completed"),
+        ("Task", #"{"v":1,"event":"stop","query":"<task-notification>"}"#),
+        ("Task", " \n [1, {\"event\": \"stop\"}]"),
+        ("Task", "Completed\u{001b}[31m"),
+        ("Task\u{0007}", "Completed"),
+        ("Task", "Completed\u{007f}"),
+        ("Task", "Completed\u{0085}")
+    ])
+    func desktopOSCRejectsMachinePayload(title: String, body: String) async throws {
+        let fixture = try makeFixture()
+        defer { fixture.restore() }
+
+        await fixture.store.addDesktopNotificationResolvingHooks(
+            tabId: fixture.source.id, surfaceId: fixture.panelId, hookDirectory: nil,
+            title: title, body: body
+        )
+
+        #expect(fixture.store.notifications.isEmpty)
+        #expect(!fixture.store.hasUnreadNotification(forTabId: fixture.source.id, surfaceId: fixture.panelId))
+        #expect(!fixture.store.hasPendingNotification(forTabId: fixture.source.id, surfaceId: fixture.panelId))
+    }
+
+    @Test("Human OSC text remains supported", arguments: [
+        ("Build", "Completed"),
+        ("", "Completed"),
+        ("Build", ""),
+        ("Build", "First line\nSecond line\tDetails\r\nDone"),
+        ("Build", "[build] completed"),
+        ("Build", "{not JSON}"),
+        ("Build", "See https://example.com/results"),
+        (String(repeating: "x", count: 256), String(repeating: "x", count: 1024)),
+        (String(repeating: "x", count: 257), String(repeating: "x", count: 4096))
+    ])
+    func desktopOSCAcceptsHumanText(title: String, body: String) async throws {
+        let fixture = try makeFixture()
+        defer { fixture.restore() }
+
+        await fixture.store.addDesktopNotificationResolvingHooks(
+            tabId: fixture.source.id, surfaceId: fixture.panelId, hookDirectory: nil,
+            title: title, body: body
+        )
+
+        #expect(fixture.store.notifications.count == 1)
+        #expect(fixture.store.notifications.first?.body == body)
     }
 
     @Test("Policy-delayed delivery resolves the pane owner again after a move")
