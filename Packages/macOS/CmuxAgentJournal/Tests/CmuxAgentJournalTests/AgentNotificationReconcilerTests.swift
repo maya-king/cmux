@@ -47,12 +47,49 @@ struct AgentNotificationReconcilerTests {
     func pendingStopDoesNotConsumeSettledCompletionOrApproval(source: String) {
         var reconciler = AgentNotificationReconciler()
         _ = reconciler.apply(event(1, .turnStarted, source: source, notify: false))
-        #expect(reconciler.apply(event(2, .turnCompleted, source: source, pending: true)).disposition == .delayed)
+        #expect(reconciler.apply(event(2, .turnCompleted, source: source, pending: true)).disposition == .accepted)
         let wait = reconciler.apply(event(3, .approvalRequested, source: source, request: "approval", pending: true))
         #expect(wait.disposition == .accepted)
         let done = reconciler.apply(event(4, .turnCompleted, source: source))
         #expect(done.disposition == .accepted)
         #expect(wait.identity != done.identity)
+    }
+
+    @Test(arguments: [false, true], [nil, "turn-1"] as [String?])
+    func pendingCompletionReachesSurfaceAdmissionWithoutAnotherEvent(knownChild: Bool, turn: String?) throws {
+        var reconciler = AgentNotificationReconciler()
+        _ = reconciler.apply(event(1, .turnStarted, source: "claude", turn: turn, notify: false))
+        if knownChild {
+            _ = reconciler.apply(event(2, .childSpawned, source: "claude", turn: turn,
+                                       request: "child", notify: false))
+        }
+        let stop = event(3, .turnCompleted, source: "claude", turn: turn, pending: !knownChild)
+        let candidate = reconciler.apply(stop)
+        #expect(candidate.disposition == .accepted)
+        let identity = try #require(candidate.identity)
+        #expect(!identity.isEmpty)
+        let delivery = candidate.notificationEvent ?? stop
+        #expect(delivery.draft.surfaceId == surface)
+        #expect(delivery.draft.pendingWork)
+        #expect(reconciler.lifecycleEvent(stop).draft.pendingWork)
+
+        // An always-enabled completion can notify now, but settlement must use
+        // the same durable receipt even if its hook carries a different event ID.
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = try AgentJournalStore(databaseURL: root.appendingPathComponent("journal.sqlite"))
+        defer { store.close() }
+        #expect(try store.claimNotification(identity: identity))
+        let settled: AgentNotificationDecision
+        if knownChild {
+            settled = reconciler.apply(event(4, .childCompleted, source: "claude", turn: turn,
+                                             request: "child", notify: false))
+        } else {
+            settled = reconciler.apply(event(4, .turnCompleted, source: "claude", turn: turn))
+        }
+        #expect(settled.disposition == .accepted)
+        #expect(settled.identity == identity)
+        #expect(try !store.claimNotification(identity: #require(settled.identity)))
     }
 
     @Test(arguments: ["claude", "codex"])
@@ -372,7 +409,7 @@ struct AgentNotificationReconcilerTests {
         var reconciler = AgentNotificationReconciler()
         _ = reconciler.apply(event(1, .turnStarted, source: source, notify: false))
         _ = reconciler.apply(event(2, .childSpawned, source: source, request: "child", notify: false))
-        #expect(reconciler.apply(event(3, .turnCompleted, source: source)).disposition == .delayed)
+        #expect(reconciler.apply(event(3, .turnCompleted, source: source)).disposition == .accepted)
         let end = event(4, .childCompleted, source: source, request: "child", notify: false, occurredAt: 2)
         let released = reconciler.apply(end)
         #expect(released.disposition == .accepted)
