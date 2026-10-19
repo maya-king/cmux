@@ -115,7 +115,10 @@ final class AgentJournalLifecycleCenter: Sendable {
                 let notificationEvent = Self.canonicalized(decision.notificationEvent ?? canonical, aliases: eventAliases)
                 guard notificationEvent.draft.attention?.notification != nil else { return false }
                 guard let identity = decision.identity else {
-                    Self.notificationDiagnostic(canonical.draft, reason: decision.disposition.rawValue)
+                    // Idle observations are not queued for retry. Give them a
+                    // terminal diagnostic instead of promising a later delivery.
+                    Self.notificationDiagnostic(canonical.draft, reason: decision.disposition == .delayed
+                        ? "dropped-ineligible-idle" : decision.disposition.rawValue)
                     return false
                 }
                 if let completion = decision.remindedCompletion,

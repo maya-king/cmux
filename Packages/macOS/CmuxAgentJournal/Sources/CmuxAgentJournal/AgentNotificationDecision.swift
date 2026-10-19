@@ -4,7 +4,7 @@ public struct AgentNotificationDecision: Sendable, Equatable {
     public enum Disposition: String, Sendable {
         /// A meaningful attention boundary is ready for durable admission.
         case accepted
-        /// Work remains; a later settled event may still be accepted.
+        /// An idle observation is ineligible while work remains or the session has ended.
         case delayed
         /// A newer lifecycle event already governs this session.
         case stale
@@ -23,7 +23,7 @@ public struct AgentNotificationDecision: Sendable, Equatable {
     /// Previously accepted requests invalidated by an explicit continuation or end.
     public let invalidatedCorrelationKeys: [String]
 
-    /// A previously delayed completion released by a causal child/request resolution.
+    /// A candidate with reconciled pending work, or a completion released by child/request resolution.
     public let notificationEvent: AgentJournalEvent?
 
     /// Whether the event contributed a lifecycle assertion rather than only a reminder.
