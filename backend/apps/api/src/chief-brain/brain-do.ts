@@ -11,6 +11,7 @@ import { clip, clipInput, flushMarks, lastTalk, markPending, runError, readRun, 
 import { type BrainConfig, patchError, readConfig, SCHEMA, writeConfig } from "./brain-store.ts"
 import { AUTH_FAILED, claudeAuthFor, forgetClaudeAuth, holderAuth, holderInvalidate, HOLDER, leaseTotal, ownerTurn, turnsObject } from "./claude-auth.ts"
 import { Compactor, type CallRecord } from "./compactor.ts"
+import { PrefixCache, ttlMs } from "./cache-prefix.ts"
 import { prunePiEntries } from "./pi-prune.ts"
 import { type LedgerAnswer, type LedgerOp, runLedger } from "../model-gateway/run-ledger.ts"
 import { capText, type Kind, Memory, RETRY_MS } from "./memory.ts"
@@ -49,8 +50,13 @@ import * as turnLoop from "./brain-turn.ts"
 export const POST_RETRY_MS = 2_500
 export const MAX_POST_TRIES = 6
 export const HOST = "cloud-chief"
-/** A turn waits at most this long for the compactor to settle the view, then runs on the view as it is. */
-export const SETTLE_MS = 3_000 // only before a forced re-render (Memory.foldDue); a turn never waits on the compactor otherwise
+/**
+ * A turn waits at most this long for every message before its new ones to be summarized (the reference
+ * client's `Memory.settle`, which has no bound), and only while the compactor is healthy (no failing
+ * node, no rate-limit wait); otherwise, or after it, the turn runs on the last rendered view plus the
+ * unsummarized messages whole (Memory.turnInput, not fresh).
+ */
+export const SETTLE_MS = 5_000
 /** A turn that runs longer is stopped and recorded failed. */
 export const TURN_MS = 10 * 60_000
 const DEFAULT_DAILY_TURNS = 300
@@ -183,6 +189,7 @@ export class ChiefBrainDO extends DurableObject<Env> {
     super(ctx, env)
     for (const q of [...SCHEMA, ...SPAWN_SCHEMA]) this.sql.exec(q)
     this.memory = new Memory(this.sql, Number(env.CHIEF_BRAIN_VIEW_BUDGET ?? "0") || 0)
+    const compactCache = new PrefixCache(ttlMs(env.CHIEF_BRAIN_CACHE_TTL))
     this.compactor = new Compactor({
       memory: this.memory,
       deps: () => {
@@ -192,7 +199,7 @@ export class ChiefBrainDO extends DurableObject<Env> {
         // A paid compactor (Haiku) only for owners allowed paid models, as for turns (modelRefusal); else the free fallback
         // (fake where the fallback is paid too, as on production: those owners run no paid turns there either).
         const name = isMetered(picked) && !meteredOwner(this.env, cfg.owner) ? (isMetered(fallback) ? FAKE : fallback) : picked
-        return { memory: this.memory, models: this.models.models, model: this.models.model(name), thinking: name === FAKE ? "off" : name === HAIKU ? "high" : "medium", prompt: "cmux", agent: AGENT, record: (_c: CallRecord) => undefined }
+        return { memory: this.memory, models: this.models.models, model: this.models.model(name), thinking: name === FAKE ? "off" : name === HAIKU ? "high" : "medium", prompt: "cmux", agent: AGENT, cache: compactCache, record: (_c: CallRecord) => undefined }
       },
       onBuilt: () => undefined,
       onFirstFailure: (l, i, error) => console.warn(JSON.stringify({ msg: "chief_brain.compactor_failed", node: `${l}:${i}`, error: error.slice(0, 300) })),
@@ -442,8 +449,8 @@ export class ChiefBrainDO extends DurableObject<Env> {
   }
 
   /** Logs the new messages, then builds the cache-stable input (frozen view + delta, OptChat 5a) with the turn row in one transaction (a restart resubmits the same bytes). */
-  openTurn(conversation: string, rows: ReadonlyArray<{ n: number; message: string; seq: number; kind: string; thread_root: string | null; text: string; woke: number }>): void {
-    return turnLoop.openTurn(this, conversation, rows)
+  openTurn(conversation: string, rows: ReadonlyArray<{ n: number; message: string; seq: number; kind: string; thread_root: string | null; text: string; woke: number }>, fresh = false): void {
+    return turnLoop.openTurn(this, conversation, rows, fresh)
   }
 
   async runTurn(id: string): Promise<void> {

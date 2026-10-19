@@ -1,6 +1,7 @@
 import type { Api, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Context, Model } from "@earendil-works/pi-ai"
 import type { MutableModels } from "@earendil-works/pi-ai/models"
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream"
+import { CACHE_BLOCKS_HEADER } from "../chief-brain/cache-prefix.ts"
 import { CreditsGate } from "../chief-brain/credits-gate.ts"
 import { creditsRequired, payerTeam } from "../credits.ts"
 import type { Env } from "../env.ts"
@@ -31,6 +32,8 @@ export interface GatewayWho {
   readonly conversation: string | undefined
   readonly agent: string | null
   readonly owner: string | null
+  /** The running turn's cache mark indices for its first user message (chief-brain/cache-prefix.ts), "" or undefined: none. */
+  readonly cache_blocks?: string | undefined
 }
 export interface GatewayUsage {
   readonly input: number
@@ -111,7 +114,7 @@ export class ModelGatewayLive {
         }
         // Only the Claude route takes the payer team, chief and call id (its service key needs them); no other provider sees them.
         const routed = model.provider === CLAUDE_ROUTE_PROVIDER
-        const headers = routed ? { ...(options?.headers ?? {}), "x-cmux-team-id": payerTeam(w.owner ?? ""), ...(w.agent ? { "x-cmux-chief-id": w.agent } : {}), "x-request-id": safeId(`${this.scope}:${key}`) } : options?.headers
+        const headers = routed ? { ...(options?.headers ?? {}), "x-cmux-team-id": payerTeam(w.owner ?? ""), ...(w.agent ? { "x-cmux-chief-id": w.agent } : {}), "x-request-id": safeId(`${this.scope}:${key}`), ...(w.cache_blocks ? { [CACHE_BLOCKS_HEADER]: w.cache_blocks } : {}) } : options?.headers
         const onResponse = (r: { headers?: Record<string, string> }, m: Model<Api>) => {
           if (w.run) this.hooks.mark?.(w.run, "headers")
           const region = r.headers?.["x-bedrock-region"]
@@ -159,7 +162,9 @@ export class ModelGatewayLive {
     }
     // The service-key route needs the payer team, chief and call id on every call, the compactor's too (claude-auth.ts signedFetch).
     const routed = model.provider === CLAUDE_ROUTE_PROVIDER
-    const headers = routed ? { ...(options?.headers ?? {}), "x-cmux-team-id": payerTeam(w.owner ?? ""), ...(w.agent ? { "x-cmux-chief-id": w.agent } : {}), "x-request-id": safeId(`${this.scope}:${key}`) } : options?.headers
+    // The cache mark indices (the compactor's) are for the Claude route's body conversion only.
+    const { [CACHE_BLOCKS_HEADER]: _marks, ...rest } = (options?.headers ?? {}) as Record<string, string>
+    const headers = routed ? { ...(options?.headers ?? {}), "x-cmux-team-id": payerTeam(w.owner ?? ""), ...(w.agent ? { "x-cmux-chief-id": w.agent } : {}), "x-request-id": safeId(`${this.scope}:${key}`) } : options?.headers ? rest : undefined
     let reply: AssistantMessage
     try {
       reply = await this.upstream.completeSimple(model, context, { ...options, ...(headers ? { headers } : {}) } as typeof options)
