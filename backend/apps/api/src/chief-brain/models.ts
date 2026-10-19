@@ -58,8 +58,12 @@ const fakeModel = (): Model<Api> => ({
 })
 
 const CLAUDE_NAMES: Record<string, string> = { "claude-opus-5-5": "Claude Opus 5.5", "claude-sonnet-5-5": "Claude Sonnet 5.5", "claude-haiku-5-5": "Claude Haiku 5.5" }
-/** Prices per million tokens for names the catalog lacks (Haiku 5.5: Anthropic's Haiku tier). */
-const CLAUDE_COST: Record<string, Model<Api>["cost"]> = { "claude-haiku-5-5": { input: 1, output: 5, cacheRead: 0.1, cacheWrite: 1.25 } }
+/**
+ * Prices per million tokens for names the catalog lacks. Haiku 5.5 on Bedrock's global profile, as chatmux2 bills it
+ * (src/server/model/bedrock-pricing.ts, prompts up to 100,000 tokens): $0.10 input, $0.50 output, $0.01 cache read,
+ * cache write $0.20 (the 1-hour entries bedrock-stream.ts marks by default; 5-minute entries are $0.125).
+ */
+const CLAUDE_COST: Record<string, Model<Api>["cost"]> = { "claude-haiku-5-5": { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.2 } }
 
 export const claudeModel = (name: string, baseUrl: string): Model<Api> => {
   const known = (ANTHROPIC_MODELS as Record<string, Model<Api>>)[name]

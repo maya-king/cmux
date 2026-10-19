@@ -83,6 +83,26 @@ describe("a Cloud Chief's chiefs tool", () => {
     expect(await manageChiefs(testEnv, lead, user, { action: "get", chief: docs.id }, "call-4")).toContain("Keep it short.")
   }, SLOW_DO)
 
+  it("makes a Chief for an owner off the paid list where the compactor default is the paid Haiku", async () => {
+    // Staging since 2026-10-16: the service-key route serves Haiku and the compactor default is Haiku. An owner who
+    // may not use paid models gets the free compactor by default, so the chiefs tool copies a value configure accepts.
+    const t = testEnv as unknown as Record<string, string | undefined>
+    const keys = ["CHIEF_BRAIN_CLAUDE_AUTH", "CHIEF_BRAIN_CLAUDE_SERVICE_KEY", "CHIEF_BRAIN_CLAUDE_MODELS", "CHIEF_BRAIN_COMPACTOR_MODEL"] as const
+    const saved = keys.map((k) => [k, t[k]] as const)
+    Object.assign(t, { CHIEF_BRAIN_CLAUDE_AUTH: "service-key", CHIEF_BRAIN_CLAUDE_SERVICE_KEY: "chatmux_sk_test-not-a-real-key", CHIEF_BRAIN_CLAUDE_MODELS: "claude-opus-5-5,claude-sonnet-5-5,claude-haiku-5-5", CHIEF_BRAIN_COMPACTOR_MODEL: "claude-haiku-5-5" })
+    try {
+      const { token, user, lead } = await owner("chiefs-tool-unpaid")
+      expect((await http("GET", `/v1/chiefs/${lead}/brain`, token)).json.value.config.compactor_model).not.toBe("claude-haiku-5-5")
+      const made = await manageChiefs(testEnv, lead, user, { action: "create", display_name: "Helper" }, "call-unpaid")
+      expect(made).toContain('"state": "started"')
+      const helper = (await chiefs(token)).find((c) => c.display_name === "Helper")!
+      await settle(user, token, helper.id)
+      expect(await manageChiefs(testEnv, lead, user, { action: "update", chief: "Helper", role: "Helps" }, "call-unpaid-2")).toContain("Helps")
+    } finally {
+      for (const [k, v] of saved) v === undefined ? delete t[k] : (t[k] = v)
+    }
+  }, SLOW_DO)
+
   it("refuses every escalation and every write it may not make", async () => {
     const { token, user, lead } = await owner("chiefs-tool-refused")
     const refusal = (p: Promise<string>) => p.then(() => "committed", (e: Error) => e.message)

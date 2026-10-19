@@ -14,6 +14,7 @@ import { Compactor, type CallRecord } from "./compactor.ts"
 import { prunePiEntries } from "./pi-prune.ts"
 import { type LedgerAnswer, type LedgerOp, runLedger } from "../model-gateway/run-ledger.ts"
 import { capText, type Kind, Memory, RETRY_MS } from "./memory.ts"
+import { HAIKU, meteredOwner } from "../model-gateway/routes.ts"
 import { brainModels, CLAUDE, compactorDefault, compactorModel, creditsCanStart, creditsNotice, FAKE, turnFailedNotice, gatewayOptions, isClaude, isMetered, liveOf, modelRefusal, pickTurnModel, validModelName } from "./models.ts"
 import { clipReply, formatMessage, isNoReply, replyTarget, systemFirst, textParts, stripStaleThinking } from "./brain-text.ts"
 import { AGENT, systemPrompt } from "./prompts.ts"
@@ -185,9 +186,13 @@ export class ChiefBrainDO extends DurableObject<Env> {
     this.compactor = new Compactor({
       memory: this.memory,
       deps: () => {
-        const set = this.config().compactor_model
-        const name = compactorModel(this.env, set, this.env.CHIEF_BRAIN_FALLBACK_MODEL || FAKE)
-        return { memory: this.memory, models: this.models.models, model: this.models.model(name), thinking: name === FAKE ? "off" : "medium", prompt: "cmux", agent: AGENT, record: (_c: CallRecord) => undefined }
+        const cfg = this.config()
+        const fallback = this.env.CHIEF_BRAIN_FALLBACK_MODEL || FAKE
+        const picked = compactorModel(this.env, cfg.compactor_model, fallback)
+        // A paid compactor (Haiku) only for owners allowed paid models, as for turns (modelRefusal); else the free fallback
+        // (fake where the fallback is paid too, as on production: those owners run no paid turns there either).
+        const name = isMetered(picked) && !meteredOwner(this.env, cfg.owner) ? (isMetered(fallback) ? FAKE : fallback) : picked
+        return { memory: this.memory, models: this.models.models, model: this.models.model(name), thinking: name === FAKE ? "off" : name === HAIKU ? "high" : "medium", prompt: "cmux", agent: AGENT, record: (_c: CallRecord) => undefined }
       },
       onBuilt: () => undefined,
       onFirstFailure: (l, i, error) => console.warn(JSON.stringify({ msg: "chief_brain.compactor_failed", node: `${l}:${i}`, error: error.slice(0, 300) })),
@@ -210,7 +215,12 @@ export class ChiefBrainDO extends DurableObject<Env> {
 
   defaults() {
     const fallback = this.env.CHIEF_BRAIN_FALLBACK_MODEL || FAKE
-    return { model: this.env.CHIEF_BRAIN_MODEL || FAKE, compactor_model: compactorDefault(this.env, this.env.CHIEF_BRAIN_MODEL || FAKE, fallback) }
+    const compactor = compactorDefault(this.env, this.env.CHIEF_BRAIN_MODEL || FAKE, fallback)
+    // The paid compactor (Haiku) is the default only for an owner allowed paid models (modelRefusal refuses it otherwise,
+    // and the chiefs tool copies this value into the Chiefs it makes); other owners get the free fallback or fake.
+    const owner = this.sql.exec<{ value: string }>(`SELECT value FROM cb_config WHERE name = 'owner'`).toArray()[0]?.value ?? null
+    const free = isMetered(fallback) ? FAKE : fallback
+    return { model: this.env.CHIEF_BRAIN_MODEL || FAKE, compactor_model: isMetered(compactor) && !meteredOwner(this.env, owner) ? free : compactor }
   }
   config(): BrainConfig {
     return readConfig(this.sql, this.defaults())

@@ -164,6 +164,40 @@ describe("Model gateway: service-key route, credits, usage, paid fallback", { ti
     for (const body of [JSON.stringify(run), JSON.stringify(reply)]) expect(body).not.toContain(KEY)
   })
 
+  it("runs the Haiku compactor on the service-key route with the payer team, chief, request id and its effort", async () => {
+    const seen = fakeRoute()
+    testEnv.CHIEF_BRAIN_CLAUDE_MODELS = "claude-opus-5-5,claude-sonnet-5-5,claude-haiku-5-5"
+    try {
+      const { token, chief, team } = await owner("brain-claude-compactor", 5, "claude-sonnet-5-5", "medium", "user")
+      const set = await http("PUT", `/v1/chiefs/${chief.id}/brain`, token, { compactor_model: "claude-haiku-5-5" })
+      expect(set.status, set.text).toBe(200)
+      // Over 512 bytes, so its node needs a model call (a shorter message is its own node).
+      const long = `The release plan: ${"ship the Haiku compactor to staging, measure recall, then production; ".repeat(12)}`
+      expect((await op(token, "message.send", { conversation: chief.main_conversation, client_msg_id: "c1", parts: [{ type: "text", text: long }] }, "c1")).ok).toBe(true)
+      const compactions = () => seen.filter((s) => s.body.model === "global.anthropic.claude-haiku-5-5")
+      await drive(chief.main_conversation, chief.id, async () => compactions().length > 0, "a compactor call on Haiku")
+      const c = compactions()[0]!
+      expect(c.headers["x-api-key"]).toBe(KEY)
+      expect(c.headers["x-cmux-team-id"]).toBe(team)
+      expect(c.headers["x-cmux-chief-id"]).toBe(chief.id)
+      expect(c.headers["x-request-id"]).toMatch(/^[A-Za-z0-9._:-]{1,128}$/)
+      // Haiku 5.5 has no mid-conversation effort: its effort travels as the top-level output_config and must reach Bedrock.
+      expect(c.body).toMatchObject({ anthropic_version: "bedrock-2023-05-31", output_config: { effort: "high" }, thinking: { type: "adaptive" } })
+      expect(JSON.stringify(c.body)).toContain("Compaction: compress message")
+      // The memory is BUILT: the long message's level-0 node holds the route's line, not a placeholder.
+      const brainOf = testEnv.CHIEF_BRAIN_DO.get(testEnv.CHIEF_BRAIN_DO.idFromName(`${chief.id}/${chief.main_conversation}`))
+      const longNode = () =>
+        runInDurableObject(brainOf, async (_i: unknown, state: DurableObjectState) => {
+          const m = state.storage.sql.exec<{ i: number }>(`SELECT i FROM oc_message WHERE text LIKE '%The release plan:%' LIMIT 1`).toArray()[0]
+          return m === undefined ? undefined : state.storage.sql.exec<{ text: string }>(`SELECT text FROM oc_node WHERE l = 0 AND i = ?`, m.i).toArray()[0]?.text
+        })
+      await drive(chief.main_conversation, chief.id, async () => (await longNode()) !== undefined, "the built node")
+      expect(await longNode()).toMatch(/^Routed answer \d+$/)
+    } finally {
+      testEnv.CHIEF_BRAIN_CLAUDE_MODELS = "claude-opus-5-5,claude-sonnet-5-5"
+    }
+  })
+
   it("makes no model call for a team with no credits and posts one out-of-credits notice", async () => {
     const seen = fakeRoute()
     const { token, chief } = await owner("brain-claude-fail", 0, "claude-opus-5-5")
