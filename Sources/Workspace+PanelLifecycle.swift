@@ -288,6 +288,15 @@ extension Workspace {
             return true
         }
 
+        // Attached sessions can publish hook lifecycle state without ever
+        // registering a wrapper PID. That evidence follows the pane on moves
+        // and is cleared when the hook session ends.
+        if agentLifecycleStatesByPanelId[panelId]?.keys.contains(where: {
+            Self.structuredAgentHookStatusKeys.contains($0)
+        }) == true {
+            return true
+        }
+
         let panelKeys = agentPIDKeysByPanelId[panelId] ?? []
         return panelKeys.contains { isStructuredAgentHookPIDKey($0) }
     }
