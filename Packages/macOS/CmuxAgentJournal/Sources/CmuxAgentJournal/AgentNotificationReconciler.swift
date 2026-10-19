@@ -537,19 +537,9 @@ public struct AgentNotificationReconciler: Sendable {
         guard context?.notification != nil else { return .init(.observation, invalidatedCorrelationKeys: invalidated) }
         guard !session.ended else { return .init(.stale) }
         let boundary: String
-        var notificationEvent: AgentJournalEvent?
         switch draft.kind {
         case .turnCompleted:
             boundary = Self.key(["completion", incomingTurn ?? session.turn])
-            if session.phase != .idle {
-                // A known surface can enter delivery policy immediately. Keep
-                // the semantic receipt so settlement cannot notify twice, and
-                // carry child evidence into the user's pending-work gate.
-                var pending = draft
-                pending.pendingWork = true
-                notificationEvent = AgentJournalEvent(sequence: event.sequence,
-                    committedAtMs: event.committedAtMs, draft: pending)
-            }
         case .approvalRequested, .questionRequested, .planReviewRequested:
             // A real blocking request is never gated by background work.
             boundary = Self.key(["attention", context?.requestIdentity
@@ -574,7 +564,7 @@ public struct AgentNotificationReconciler: Sendable {
         }
         storeSession(session, for: sessionKey, indexKey: boundaryKey)
         return .init(.accepted, identity: identity, invalidatedCorrelationKeys: invalidated,
-            notificationEvent: notificationEvent)
+            notificationEvent: Self.completionNotificationEvent(event, phase: session.phase))
     }
 
     /// Projects the reconciled phase back into the shared lifecycle fold.
